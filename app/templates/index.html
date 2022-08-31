@@ -46,12 +46,36 @@
           </div>
         </div>
       </div>
+
+      <div class="accordion-item">
+        <h2 class="accordion-header" id="headingTwo">
+          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo"
+            aria-expanded="false" aria-controls="collapseTwo">
+            Authenticate
+          </button>
+        </h2>
+        <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo" data-bs-parent="#fido2-accordion">
+          <div class="accordion-body">
+            <p>Enter the user id to authenticate with</p>
+
+            <form id="authenticate-form">
+              <div class="mb-3">
+                <label for="authUserId" class="form-label">User ID</label>
+                <input type="text" class="form-control" id="authUserId" required />
+              </div>
+
+              <button type="submit" class="btn btn-primary">Submit</button>
+            </form>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
 
 <script type="module">
   import register from "{{ url_for('static', filename='js/register.mjs') }}";
+  import {authenticate} from "{{ url_for('static', filename='js/authenticate.mjs') }}";
 
   // registration flow
   document.getElementById("register-form").addEventListener("submit", async e => {
@@ -60,6 +84,13 @@
     const userName = document.getElementById("regUserName").value;
     const displayName = document.getElementById("regDisplayName").value;
     await register(userId, userName, displayName);
+  });
+
+  // auth flow
+  document.getElementById("authenticate-form").addEventListener("submit", async e => {
+    e.preventDefault();
+    const userId = document.getElementById("authUserId").value;
+    await authenticate(userId);
   });
 </script>
 {% endblock %}

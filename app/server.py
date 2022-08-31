@@ -8,6 +8,7 @@ from fido2.webauthn import (
     AttestationObject,
     AttestedCredentialData,
     AuthenticatorAttachment,
+    AuthenticatorData,
     CollectedClientData,
     PublicKeyCredentialRpEntity,
     PublicKeyCredentialUserEntity,
@@ -113,6 +114,44 @@ def api_register_complete():
         user.credentials.append(auth_data.credential_data)
 
     return cbor.encode({"status": "ok"})
+
+
+@app.route("/api/authenticate", methods=["POST"])
+def authenticate():
+    data = request.json or {}
+    user_id = data["userId"]  # type: ignore
+
+    if not (user := get_user(user_id)):
+        return abort(404)
+
+    auth_data, state = _server.authenticate_begin(user.credentials)
+    session[f"state-{user_id}"] = state
+    return cbor.encode(auth_data)
+
+
+@app.route("/api/authenticate/complete", methods=["POST"])
+def authenticate_complete():
+    data = cbor.decode(request.get_data())
+    user_id = data["userId"]  # type: ignore
+
+    if not (user := get_user(user_id)):
+        return abort(404)
+
+    credential_id = data["credentialId"]  # type: ignore
+    client_data = CollectedClientData(data["clientDataJSON"])  # type: ignore
+    auth_data = AuthenticatorData(data["authenticatorData"])  # type: ignore
+    signature = data["signature"]  # type: ignore
+
+    _server.authenticate_complete(
+        session.pop(f"state-{user_id}"),
+        user.credentials,
+        credential_id,  # type: ignore
+        client_data,
+        auth_data,
+        signature,  # type: ignore
+    )
+
+    return cbor.encode({"status": "OK"})
 
 
 def main():
