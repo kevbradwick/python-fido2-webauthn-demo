@@ -1,0 +1,31 @@
+[tool.poetry]
+name = "webauthn-demo"
+version = "0.1.0"
+description = ""
+authors = ["Kevin Bradwick <kevinbradwick@gmail.com>"]
+packages = [
+  {include = "app"}
+]
+
+[tool.poetry.dependencies]
+python = "^3.7"
+Flask = "^2.2.2"
+webauthn = "^1.6.0"
+fido2 = "^1.0.0"
+pyOpenSSL = "^22.0.0"
+
+[tool.poetry.dev-dependencies]
+isort = "^5.10.1"
+black = "^22.6.0"
+autoflake = "^1.5.2"
+
+[tool.poetry.scripts]
+server = "app.server:main"
+
+[tool.black]
+line-length = 88
+target-version = ["py37"]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

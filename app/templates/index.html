@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block body %}
+<div class="row" style="margin-top: 20px">
+  <div class="col">
+    <h1>FIDO2 / WebAuthn Demo</h1>
+    <p>Use this page to play with FIDO2/WebAuthn.</p>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col">
+
+    <!-- alerts -->
+    <div class="alert alert-success visually-hidden" id="alert-success">Success</div>
+    <div class="alert alert-danger visually-hidden" id="alert-error">Error</div>
+
+    <div class="accordion" id="fido2-accordion">
+      <div class="accordion-item">
+        <h2 class="accordion-header" id="headingOne">
+          <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
+            Registration
+          </button>
+        </h2>
+        <div id="collapseOne" class="accordion-collapse collapse show" aria-labelledby="headingOne" data-bs-parent="#fido2-accordion">
+          <div class="accordion-body">
+            <p>Enter the details of a user here and hit submit. The details you enter represent a user of the system that would typically come from your database.</p>
+            <form id="register-form">
+              <div class="mb-3">
+                <label for="regUserId" class="form-label">User ID</label>
+                <input type="text" class="form-control" id="regUserId" required />
+              </div>
+
+              <div class="mb-3">
+                <label for="regUserName" class="form-label">User Name</label>
+                <input type="text" class="form-control" id="regUserName" required />
+              </div>
+
+              <div class="mb-3">
+                <label for="regDisplayName" class="form-label">Display Name</label>
+                <input type="text" class="form-control" id="regDisplayName" required />
+              </div>
+
+              <button type="submit" class="btn btn-primary">Submit</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import register from "{{ url_for('static', filename='js/register.mjs') }}";
+
+  // registration flow
+  document.getElementById("register-form").addEventListener("submit", async e => {
+    e.preventDefault();
+    const userId = document.getElementById("regUserId").value;
+    const userName = document.getElementById("regUserName").value;
+    const displayName = document.getElementById("regDisplayName").value;
+    await register(userId, userName, displayName);
+  });
+</script>
+{% endblock %}
