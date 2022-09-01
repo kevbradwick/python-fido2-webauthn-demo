@@ -19,7 +19,10 @@ from flask import Flask, abort, jsonify, render_template, request, session
 app = Flask(__name__)
 app.secret_key = os.urandom(32)
 
-_rp = PublicKeyCredentialRpEntity(name="Demo server", id="localhost")
+RP_HOST = os.environ.get("RP_HOST", "localhost")
+RP_NAME = os.environ.get("RP_NAME", "Demo")
+
+_rp = PublicKeyCredentialRpEntity(name=RP_NAME, id=RP_HOST)
 _server = Fido2Server(_rp)
 
 
@@ -38,14 +41,22 @@ class User:
         }
 
 
-# in memory store of users
-USERS: List[User] = []
+@dataclass
+class UserRepository:
+    users: List[User] = field(default_factory=list)
+
+    def find(self, user_id) -> Optional[User]:
+        for u in self.users:
+            if u.user_id == user_id:
+                return u
+
+    def add(self, user: User):
+        if len(self.users) == 20:
+            self.users.pop(0)
+        self.users.append(user)
 
 
-def get_user(user_id: str) -> Optional[User]:
-    for u in USERS:
-        if u.user_id == user_id:
-            return u
+_user_repo = UserRepository()
 
 
 @app.route("/")
@@ -55,7 +66,7 @@ def index():
 
 @app.route("/api/users")
 def api_user_list():
-    return jsonify([u.json() for u in USERS])
+    return jsonify([u.json() for u in _user_repo.users])
 
 
 @app.route("/api/register", methods=["POST"])
@@ -74,9 +85,9 @@ def api_register():
 
     # if the user is not already known, create them and add them to the list then
     # continue with the security key registration process.
-    if not (user := get_user(user_id)):
+    if not (user := _user_repo.find(user_id)):
         user = User(user_id, username, display_name)
-        USERS.append(user)
+        _user_repo.add(user)
 
     pk_user_entity = PublicKeyCredentialUserEntity(
         username, str.encode(user_id), display_name
@@ -104,7 +115,7 @@ def api_register_complete():
     client_data = CollectedClientData(data["clientDataJSON"])  # type: ignore
     att_obj = AttestationObject(data["attestationObject"])  # type: ignore
 
-    if not (user := get_user(user_id)):
+    if not (user := _user_repo.find(user_id)):
         return abort(404)
 
     auth_data = _server.register_complete(
@@ -121,7 +132,7 @@ def authenticate():
     data = request.json or {}
     user_id = data["userId"]  # type: ignore
 
-    if not (user := get_user(user_id)):
+    if not (user := _user_repo.find(user_id)):
         return abort(404)
 
     auth_data, state = _server.authenticate_begin(user.credentials)
@@ -134,7 +145,7 @@ def authenticate_complete():
     data = cbor.decode(request.get_data())
     user_id = data["userId"]  # type: ignore
 
-    if not (user := get_user(user_id)):
+    if not (user := _user_repo.find(user_id)):
         return abort(404)
 
     credential_id = data["credentialId"]  # type: ignore
